@@ -2,7 +2,7 @@ local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/minhd
 
 local Window = redzlib:MakeWindow({
   Title = "Reset Hub Oficial Português",
-  SubTitle = "by c00lkidd & davi lucas",
+  SubTitle = "by scripts073 and davi lucas and scripts_H54",
   SaveFolder = "ResetHubBrookhaven.json"
 })
 
@@ -15,7 +15,7 @@ redzlib:SetTheme({
     PlaceholderText = Color3.fromRGB(120, 120, 120)
 })
 
--- Botão de Minimizar (Bolinha Redonda)
+-- Botão de Minimizar
 Window:AddMinimizeButton({
     Button = { 
         Image = "rbxassetid://129694133855303", 
@@ -25,12 +25,13 @@ Window:AddMinimizeButton({
 })
 
 ---
--- VARIÁVEIS GLOBAIS E FUNÇÕES AUXILIARES
+-- VARIÁVEIS GLOBAIS
 ---
 local SelectedPlayer = ""
 local FlingEnabled = false
 local espColor = Color3.fromRGB(255, 0, 0)
 local espEnabled = false
+local Camera = workspace.CurrentCamera
 
 local function getPlayers()
     local list = {}
@@ -50,8 +51,8 @@ local TabInfo = Window:MakeTab({"Informações", "info"})
 TabInfo:AddDiscordInvite({
     Name = "Reset Hub Community",
     Description = "Entre no nosso Discord para novidades!",
-    Logo = "rbxassetid://18751483361",
-    Invite = "https://discord.gg/resethub",
+    Logo = "rbxassetid://83880024989985", 
+    Invite = "https://discord.gg/wsjtdbNPYf",
 })
 
 TabInfo:AddSection({"Status"})
@@ -60,7 +61,7 @@ TabInfo:AddParagraph({"Informações do Script", "O script está: Online 🟢\nV
 TabInfo:AddSection({"Equipe do Reset Hub"})
 TabInfo:AddParagraph({
     "Membros da Staff", 
-    "Dono: c00lkidd\nSub-dono: Davi Lucas\nAdministrador: Ninguém\nModerador: Ninguém\nTester: Ninguém"
+    "Dono: Scripts073\nSub-Dono: Davi Lucas and scripts_H54\nAdministrador: ninguém\nModerador: ninguém\nStaff: ninguém\nTester: ninguém"
 })
 
 ---
@@ -72,7 +73,7 @@ TabTroll:AddSection({"Seletor de Alvos"})
 
 local PlayerDropdown = TabTroll:AddDropdown({
     Name = "Selecionar Player",
-    Description = "Escolha um jogador para as ações",
+    Description = "Escolha um jogador primeiro",
     Options = getPlayers(),
     Default = "",
     Callback = function(Value)
@@ -84,15 +85,31 @@ TabTroll:AddButton({
     Name = "Atualizar Lista de Players",
     Callback = function()
         PlayerDropdown:SetOptions(getPlayers())
-        redzlib:SetNotification({
-            Title = "Reset Hub",
-            Content = "Lista de jogadores sincronizada!",
-            Duration = 2
-        })
+        redzlib:SetNotification({Title = "Reset Hub", Content = "Lista atualizada!", Duration = 2})
     end
 })
 
 TabTroll:AddSection({"Ações Troll"})
+
+-- FUNÇÃO VIEW PLAYER (ESPIAR)
+TabTroll:AddToggle({
+    Name = "View Player (Espiar)",
+    Default = false,
+    Callback = function(state)
+        if state then
+            local target = game.Players:FindFirstChild(SelectedPlayer)
+            if target and target.Character then
+                Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
+                redzlib:SetNotification({Title = "View", Content = "Espiando: "..SelectedPlayer, Duration = 2})
+            else
+                redzlib:SetNotification({Title = "Erro", Content = "Selecione um player válido!", Duration = 2})
+            end
+        else
+            Camera.CameraSubject = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            redzlib:SetNotification({Title = "View", Content = "Câmera resetada", Duration = 2})
+        end
+    end
+})
 
 TabTroll:AddToggle({
     Name = "Ativar Fling (Sofá Troll)",
@@ -106,9 +123,8 @@ TabTroll:AddToggle({
                     pcall(function()
                         local targetPlayer = game.Players:FindFirstChild(SelectedPlayer)
                         if targetPlayer and targetPlayer.Character then
-                            local targetPos = targetPlayer.Character.HumanoidRootPart.CFrame
                             local root = game.Players.LocalPlayer.Character.HumanoidRootPart
-                            root.CFrame = targetPos * CFrame.new(0, 0, 1)
+                            root.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
                             root.Velocity = Vector3.new(99999, 99999, 99999)
                         end
                     end)
@@ -116,9 +132,7 @@ TabTroll:AddToggle({
                 end
             end)
         else
-            pcall(function()
-                game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-            end)
+            pcall(function() game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0) end)
         end
     end
 })
@@ -135,7 +149,6 @@ local function updateESP()
             local highlight = char:FindFirstChild("ResetESP") or Instance.new("Highlight", char)
             highlight.Name = "ResetESP"
             highlight.FillColor = espColor
-            highlight.OutlineColor = (espColor == Color3.fromRGB(0,0,0) and Color3.fromRGB(50,50,50) or espColor)
             highlight.Enabled = espEnabled
         end
     end
@@ -152,20 +165,13 @@ TabVisual:AddToggle({
 
 TabVisual:AddDropdown({
     Name = "Cor do ESP",
-    Options = {"Vermelho", "Azul", "Laranja", "Verde", "Rosa", "Roxo", "Preto", "Branco"},
+    Options = {"Vermelho", "Azul", "Verde", "Branco"},
     Default = "Vermelho",
     Callback = function(Value)
-        local colors = {
-            ["Vermelho"] = Color3.fromRGB(255, 0, 0),
-            ["Azul"] = Color3.fromRGB(0, 102, 255),
-            ["Laranja"] = Color3.fromRGB(255, 165, 0),
-            ["Verde"] = Color3.fromRGB(0, 255, 0),
-            ["Rosa"] = Color3.fromRGB(255, 20, 147),
-            ["Roxo"] = Color3.fromRGB(138, 43, 226),
-            ["Preto"] = Color3.fromRGB(0, 0, 0),
-            ["Branco"] = Color3.fromRGB(255, 255, 255)
-        }
-        espColor = colors[Value] or colors["Vermelho"]
+        if Value == "Vermelho" then espColor = Color3.fromRGB(255, 0, 0)
+        elseif Value == "Azul" then espColor = Color3.fromRGB(0, 0, 255)
+        elseif Value == "Verde" then espColor = Color3.fromRGB(0, 255, 0)
+        elseif Value == "Branco" then espColor = Color3.fromRGB(255, 255, 255) end
         updateESP()
     end
 })
@@ -178,30 +184,12 @@ TabBrook:AddButton({"Virar Zumbi", function()
     game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true})
 end})
 
-TabBrook:AddToggle({
-    Name = "Pulo Infinito",
-    Default = false,
-    Callback = function(s)
-        _G.InfJump = s
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            if _G.InfJump then
-                game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-            end
-        end)
-    end
-})
-
 ---
--- ABA SCRIPTS
+-- ABA SCRIPTS & CONFIG
 ---
 local TabScripts = Window:MakeTab({"Scripts", "scroll"})
 TabScripts:AddButton({ Name = "Infinite Yield", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))() end })
-TabScripts:AddButton({ Name = "Fly (Voo)", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.lua"))() end })
-TabScripts:AddButton({ Name = "CMD-X", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source", true))() end })
 
----
--- ABA CONFIGURAÇÕES
----
 local TabConfig = Window:MakeTab({"Config", "settings"})
 TabConfig:AddSlider({
     Name = "Velocidade",
