@@ -1,9 +1,9 @@
 local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/minhdepzai-v/LibraryRobloc/refs/heads/main/RedzLibrary.lua"))()
 
 local Window = redzlib:MakeWindow({
-  Title = "Reset Hub Oficial Português",
+  Title = "Cat hub v1 português",
   SubTitle = "by scripts073 and davi lucas and scripts_H54",
-  SaveFolder = "ResetHubBrookhaven.json"
+  SaveFolder = "CatHubBrookhaven.json"
 })
 
 -- // TEMA PRETO E VERMELHO //
@@ -15,10 +15,10 @@ redzlib:SetTheme({
     PlaceholderText = Color3.fromRGB(120, 120, 120)
 })
 
--- Botão de Minimizar
+-- Botão de Minimizar (Bolinha) com Foto Nova
 Window:AddMinimizeButton({
     Button = { 
-        Image = "rbxassetid://129694133855303", 
+        Image = "rbxassetid://10800748303", 
         BackgroundTransparency = 0 
     },
     Corner = { CornerRadius = UDim.new(1, 0) },
@@ -48,17 +48,18 @@ end
 ---
 local TabInfo = Window:MakeTab({"Informações", "info"})
 
+-- Discord com Foto Nova e Link Atualizado
 TabInfo:AddDiscordInvite({
-    Name = "Reset Hub Community",
+    Name = "Cat hub community",
     Description = "Entre no nosso Discord para novidades!",
-    Logo = "rbxassetid://83880024989985", 
+    Logo = "rbxassetid://6633546598", 
     Invite = "https://discord.gg/wsjtdbNPYf",
 })
 
 TabInfo:AddSection({"Status"})
 TabInfo:AddParagraph({"Informações do Script", "O script está: Online 🟢\nVersão: 1.0.2"})
 
-TabInfo:AddSection({"Equipe do Reset Hub"})
+TabInfo:AddSection({"Equipe do Cat Hub"})
 TabInfo:AddParagraph({
     "Membros da Staff", 
     "Dono: Scripts073\nSub-Dono: Davi Lucas and scripts_H54\nAdministrador: ninguém\nModerador: ninguém\nStaff: ninguém\nTester: ninguém"
@@ -85,13 +86,12 @@ TabTroll:AddButton({
     Name = "Atualizar Lista de Players",
     Callback = function()
         PlayerDropdown:SetOptions(getPlayers())
-        redzlib:SetNotification({Title = "Reset Hub", Content = "Lista atualizada!", Duration = 2})
+        redzlib:SetNotification({Title = "Cat Hub", Content = "Lista atualizada!", Duration = 2})
     end
 })
 
 TabTroll:AddSection({"Ações Troll"})
 
--- FUNÇÃO VIEW PLAYER (ESPIAR)
 TabTroll:AddToggle({
     Name = "View Player (Espiar)",
     Default = false,
@@ -100,13 +100,9 @@ TabTroll:AddToggle({
             local target = game.Players:FindFirstChild(SelectedPlayer)
             if target and target.Character then
                 Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
-                redzlib:SetNotification({Title = "View", Content = "Espiando: "..SelectedPlayer, Duration = 2})
-            else
-                redzlib:SetNotification({Title = "Erro", Content = "Selecione um player válido!", Duration = 2})
             end
         else
             Camera.CameraSubject = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            redzlib:SetNotification({Title = "View", Content = "Câmera resetada", Duration = 2})
         end
     end
 })
@@ -146,8 +142,8 @@ local function updateESP()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
             local char = player.Character
-            local highlight = char:FindFirstChild("ResetESP") or Instance.new("Highlight", char)
-            highlight.Name = "ResetESP"
+            local highlight = char:FindFirstChild("CatESP") or Instance.new("Highlight", char)
+            highlight.Name = "CatESP"
             highlight.FillColor = espColor
             highlight.Enabled = espEnabled
         end
@@ -168,10 +164,8 @@ TabVisual:AddDropdown({
     Options = {"Vermelho", "Azul", "Verde", "Branco"},
     Default = "Vermelho",
     Callback = function(Value)
-        if Value == "Vermelho" then espColor = Color3.fromRGB(255, 0, 0)
-        elseif Value == "Azul" then espColor = Color3.fromRGB(0, 0, 255)
-        elseif Value == "Verde" then espColor = Color3.fromRGB(0, 255, 0)
-        elseif Value == "Branco" then espColor = Color3.fromRGB(255, 255, 255) end
+        local colors = {["Vermelho"] = Color3.fromRGB(255,0,0), ["Azul"] = Color3.fromRGB(0,0,255), ["Verde"] = Color3.fromRGB(0,255,0), ["Branco"] = Color3.fromRGB(255,255,255)}
+        espColor = colors[Value]
         updateESP()
     end
 })
