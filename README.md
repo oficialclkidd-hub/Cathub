@@ -102,9 +102,9 @@ TabPlayer:AddSlider({Name = "Pulo (JumpPower)", Min = 50, Max = 1000, Default = 
 TabPlayer:AddSlider({Name = "Gravidade", Min = 0, Max = 196.2, Default = 196.2, Callback = function(v) workspace.Gravity = v end})
 
 ---
--- ABA 4: TROLL (A NOVA TAB COMPLETA)
+-- ABA 4: TROLL (VERSÃO COMPLETA)
 ---
-local TabTroll = Window:MakeTab({"troll", "skull"})
+local TabTroll = Window:MakeTab({"Troll", "skull"})
 
 TabTroll:AddSection({"Seletor de Alvo"})
 local TrollDropdown = TabTroll:AddDropdown({
@@ -127,36 +127,48 @@ TabTroll:AddToggle({
     end
 })
 
-TabTroll:AddSection({"Kill & Pull"})
+TabTroll:AddSection({"Ações de Kill & Pull"})
 TabTroll:AddDropdown({
-    Name = "Método Kill/Pull",
-    Options = {"Sofá", "Ônibus"},
+    Name = "Método de Ataque",
+    Options = {"Sofá", "Ônibus", "Skate", "Hambúrguer"},
     Default = "Sofá",
     Callback = function(v) selectedKillMethod = v end
 })
-TabTroll:AddButton({
-    Name = "Ativar Matar/Puxar",
-    Callback = function()
-        if not SelectedTrollPlayer then return end
-        if selectedKillMethod == "Sofá" then
-            RE["1Too1l"]:InvokeServer("PickingTools", "Couch")
-            task.wait(0.3)
-            local tool = LP.Backpack:FindFirstChild("Couch") or LP.Character:FindFirstChild("Couch")
-            if tool then tool.Parent = LP.Character end
+
+TabTroll:AddToggle({
+    Name = "Ativar Matar/Puxar (Loop)",
+    Default = false,
+    Callback = function(state)
+        isFollowingKill = state
+        if state then
+            task.spawn(function()
+                while isFollowingKill do
+                    pcall(function()
+                        if selectedKillMethod == "Sofá" then
+                            RE["1Too1l"]:InvokeServer("PickingTools", "Couch")
+                        elseif selectedKillMethod == "Skate" then
+                            RE["1Too1l"]:InvokeServer("PickingTools", "Skateboard")
+                        end
+                        local tool = LP.Backpack:FindFirstChildOfClass("Tool")
+                        if tool then tool.Parent = LP.Character end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
         end
-        isFollowingKill = true
     end
 })
 
 TabTroll:AddSection({"Flings Avançados"})
 TabTroll:AddDropdown({
-    Name = "Método de Fling",
-    Options = {"Sofá", "Ônibus", "Bola", "Bola V2", "Barco", "Caminhão"},
+    Name = "Veículo de Fling",
+    Options = {"Sofá", "Ônibus", "Barco", "Caminhão", "Helicóptero"},
     Default = "Sofá",
     Callback = function(v) selectedFlingMethod = v end
 })
+
 TabTroll:AddToggle({
-    Name = "Ativar Fling",
+    Name = "Ativar Fling (Girar)",
     Default = false,
     Callback = function(state)
         FlingAtivo = state
@@ -164,11 +176,15 @@ TabTroll:AddToggle({
             task.spawn(function()
                 while FlingAtivo do
                     pcall(function()
-                        if selectedFlingMethod == "Bola" then RE["1Too1l"]:InvokeServer("PickingTools", "SoccerBall")
-                        elseif selectedFlingMethod == "Ônibus" then RE["1Ca1r"]:FireServer("CreateVehicle", "SchoolBus", LP.Character.HumanoidRootPart.CFrame)
-                        elseif selectedFlingMethod == "Barco" then RE["1Ca1r"]:FireServer("CreateVehicle", "Boat", LP.Character.HumanoidRootPart.CFrame) end
+                        if selectedFlingMethod == "Ônibus" then 
+                            RE["1Ca1r"]:FireServer("CreateVehicle", "SchoolBus", LP.Character.HumanoidRootPart.CFrame)
+                        elseif selectedFlingMethod == "Barco" then 
+                            RE["1Ca1r"]:FireServer("CreateVehicle", "Boat", LP.Character.HumanoidRootPart.CFrame)
+                        elseif selectedFlingMethod == "Caminhão" then
+                            RE["1Ca1r"]:FireServer("CreateVehicle", "FireTruck", LP.Character.HumanoidRootPart.CFrame)
+                        end
                     end)
-                    task.wait(0.1)
+                    task.wait(0.3)
                 end
             end)
         else
@@ -190,7 +206,9 @@ TabTroll:AddToggle({
                     RE["1Too1l"]:InvokeServer("PickingTools", "Assault")
                     task.wait(0.2)
                     for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LP and p.Character then RE["1Gu1n"]:FireServer(p.Character.HumanoidRootPart) end
+                        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then 
+                            RE["1Gu1n"]:FireServer(p.Character.HumanoidRootPart) 
+                        end
                     end
                 end)
                 task.wait(0.5)
@@ -200,7 +218,7 @@ TabTroll:AddToggle({
 })
 
 TabTroll:AddButton({
-    Name = "Parar Tudo",
+    Name = "PARAR TUDO",
     Callback = function()
         isFollowingKill = false
         isFollowingPull = false
@@ -208,6 +226,7 @@ TabTroll:AddButton({
         FlingAtivo = false
         RE["1Ca1r"]:FireServer("DeleteAllVehicles")
         Camera.CameraSubject = LP.Character.Humanoid
+        redzlib:Notify({Title = "Cat Hub", Text = "Todos os Trolls parados!", Duration = 3})
     end
 })
 
@@ -266,6 +285,7 @@ RunService.Heartbeat:Connect(function()
     if (isFollowingKill or isFollowingPull or FlingAtivo) and SelectedTrollPlayer and SelectedTrollPlayer.Character then
         pcall(function()
             local targetHrp = SelectedTrollPlayer.Character.HumanoidRootPart
+            -- Gira o personagem violentamente para o Fling
             LP.Character.HumanoidRootPart.CFrame = targetHrp.CFrame * CFrame.Angles(math.rad(tick()*1200), math.rad(tick()*1200), math.rad(tick()*1200))
         end)
     end
@@ -280,7 +300,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-redzlib:Notify({Title = "Cat Hub v1", Text = "Hub completo com Nova Tab Troll carregado!", Duration = 5})
+redzlib:Notify({Title = "Cat Hub v1", Text = "Hub carregado com sucesso!", Duration = 5})
+
 
  
 
