@@ -1,16 +1,17 @@
 -- // INICIALIZAÇÃO E IDENTIDADE //
+-- Este bloco garante que o script se identifique ao servidor e configure o nome no Brookhaven
 local success, content = pcall(function()
     return game:HttpGet("https://nexviewsservice.shardweb.app/services/s4turn_hub/start")
 end)
 
--- Sistema de Nome/Bio no Brookhaven
 local RE = game:GetService("ReplicatedStorage"):WaitForChild("RE")
 pcall(function()
-    RE["1RPNam1eTex1t"]:FireServer("RolePlayBio", "Cat Hub v1 - FULL")
+    RE["1RPNam1eTex1t"]:FireServer("RolePlayBio", "Cat Hub v1 - Edição Completa")
     RE["1RPNam1eTex1t"]:FireServer("RolePlayName", "ã¾ Cat Hub v1")
+    RE["1RPNam1eColo1r"]:FireServer("PickingRPBioColor", Color3.new(255, 0, 0))
 end)
 
--- Carregamento da Library
+-- // CARREGAMENTO DA INTERFACE (LIBRARY) //
 local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/toparemos/Library/refs/heads/main/library.lua"))()
 
 local Window = redzlib:MakeWindow({
@@ -19,16 +20,17 @@ local Window = redzlib:MakeWindow({
     SaveFolder = "CatHubBrookhaven.json"
 })
 
--- Botão de Minimizar (ID: 14096965095)
+-- Botão Flutuante de Minimizar (Bolinha customizada)
 Window:AddMinimizeButton({
     Button = { Image = "rbxassetid://14096965095", BackgroundTransparency = 0 },
     Corner = { CornerRadius = UDim.new(35, 1) },
 })
 
 ---
--- VARIÁVEIS DE CONTROLE
+-- VARIÁVEIS GLOBAIS (ESTADO DO SCRIPT)
 ---
-local SelectedPlayer = ""
+local SelectedCombatPlayer = ""
+local SelectedTrollPlayer = ""
 local AimbotEnabled = false
 local AimPart = "Head"
 local espEnabled = false
@@ -37,6 +39,7 @@ local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local LP = game.Players.LocalPlayer
 
+-- Função para listar jogadores (exceto você mesmo)
 local function getPlayers()
     local list = {}
     for _, plr in pairs(game.Players:GetPlayers()) do
@@ -46,46 +49,55 @@ local function getPlayers()
 end
 
 ---
--- ABA 1: INFORMAÇÕES (CONFORME A IMAGEM)
+-- ABA 1: INFORMAÇÕES
+-- Contém os créditos e o convite oficial do Discord
 ---
-local Tab1 = Window:MakeTab({"Informações", "info"})
+local TabInfo = Window:MakeTab({"Informações", "info"})
 
-Tab1:AddSection({"Creditos do Hub"})
+TabInfo:AddSection({"Creditos do Hub"})
 
-Tab1:AddDiscordInvite({
+TabInfo:AddDiscordInvite({
     Name = "â½¦ Cat Hub Studios",
     Description = "Discord oficial do cat hub entra para saber atualizações do hub: https://discord.gg/vUNHqeUtQq",
     Logo = "rbxassetid://74041792558354",
     Invite = "https://discord.gg/vUNHqeUtQq",
 })
 
-Tab1:AddSection({"Status"})
-Tab1:AddParagraph({"Informações", "O script está: Online 🟢\nVersão: 1.0.2\nCriado por: Scripts073, Davi Lucas e scripts_H54"})
+TabInfo:AddSection({"Status do Sistema"})
+TabInfo:AddParagraph({"Detalhes", "Status: Online 🟢\nVersão: 1.0.2\nCompatibilidade: R6/R15"})
 
 ---
--- ABA 2: COMBATE
+-- ABA 2: COMBATE (AIMBOT)
+-- Foca a câmera automaticamente em partes específicas do inimigo
 ---
 local TabCombat = Window:MakeTab({"Combate", "crosshair"})
-TabCombat:AddSection({"Aimbot"})
+TabCombat:AddSection({"Configurações de Alvo"})
 
-local TargetDropdown = TabCombat:AddDropdown({
-    Name = "Selecionar Player",
+local CombatDropdown = TabCombat:AddDropdown({
+    Name = "Selecionar Alvo (Combate)",
     Options = getPlayers(),
     Default = "",
-    Callback = function(v) SelectedPlayer = v end
+    Callback = function(v) SelectedCombatPlayer = v end
 })
 
 TabCombat:AddButton({
-    Name = "Atualizar Players",
-    Callback = function() TargetDropdown:SetOptions(getPlayers()) end
+    Name = "Atualizar Lista de Jogadores",
+    Callback = function() CombatDropdown:SetOptions(getPlayers()) end
 })
 
 TabCombat:AddDropdown({
-    Name = "Focar Parte do Corpo",
+    Name = "Parte do Corpo para Focar",
     Options = {"Cabeça", "Barriga", "Braço Direito", "Braço Esquerdo", "Pé Direito", "Pé Esquerdo"},
     Default = "Cabeça",
     Callback = function(v)
-        local parts = {["Cabeça"]="Head", ["Barriga"]="HumanoidRootPart", ["Braço Direito"]="RightUpperArm", ["Braço Esquerdo"]="LeftUpperArm", ["Pé Direito"]="RightFoot", ["Pé Esquerdo"]="LeftFoot"}
+        local parts = {
+            ["Cabeça"]="Head", 
+            ["Barriga"]="HumanoidRootPart", 
+            ["Braço Direito"]="RightUpperArm", 
+            ["Braço Esquerdo"]="LeftUpperArm", 
+            ["Pé Direito"]="RightFoot", 
+            ["Pé Esquerdo"]="LeftFoot"
+        }
         AimPart = parts[v] or "Head"
     end
 })
@@ -96,10 +108,10 @@ TabCombat:AddToggle({
     Callback = function(v) AimbotEnabled = v end
 })
 
--- Loop Aimbot
+-- Loop de execução do Aimbot (RenderStepped para suavidade)
 RunService.RenderStepped:Connect(function()
-    if AimbotEnabled and SelectedPlayer ~= "" then
-        local target = game.Players:FindFirstChild(SelectedPlayer)
+    if AimbotEnabled and SelectedCombatPlayer ~= "" then
+        local target = game.Players:FindFirstChild(SelectedCombatPlayer)
         if target and target.Character and target.Character:FindFirstChild(AimPart) then
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[AimPart].Position)
         end
@@ -107,11 +119,12 @@ RunService.RenderStepped:Connect(function()
 end)
 
 ---
--- ABA 3: PLAYER (NOVA ABA)
+-- ABA 3: PLAYER
+-- Modificações físicas do seu personagem
 ---
 local TabPlayer = Window:MakeTab({"Player", "user"})
 
-TabPlayer:AddSection({"Movimentação"})
+TabPlayer:AddSection({"Atributos Físicos"})
 
 TabPlayer:AddSlider({
     Name = "Velocidade (WalkSpeed)",
@@ -135,22 +148,36 @@ TabPlayer:AddSlider({
 })
 
 TabPlayer:AddSlider({
-    Name = "Gravidade",
+    Name = "Gravidade do Mundo",
     Min = 0, Max = 196.2, Default = 196.2,
-    Callback = function(v)
-        workspace.Gravity = v
-    end
+    Callback = function(v) workspace.Gravity = v end
 })
 
 ---
 -- ABA 4: TROLL
+-- Funções para interagir e observar outros players
 ---
 local TabTroll = Window:MakeTab({"Troll", "skull"})
+
+TabTroll:AddSection({"Seletor Troll"})
+
+local TrollDropdown = TabTroll:AddDropdown({
+    Name = "Selecionar Alvo (Troll/View)",
+    Options = getPlayers(),
+    Default = "",
+    Callback = function(v) SelectedTrollPlayer = v end
+})
+
+TabTroll:AddButton({
+    Name = "Atualizar Lista",
+    Callback = function() TrollDropdown:SetOptions(getPlayers()) end
+})
+
 TabTroll:AddToggle({
-    Name = "View Player (Espiar)",
+    Name = "View Player (Observar)",
     Default = false,
     Callback = function(state)
-        local target = game.Players:FindFirstChild(SelectedPlayer)
+        local target = game.Players:FindFirstChild(SelectedTrollPlayer)
         if state and target and target.Character then
             Camera.CameraSubject = target.Character.Humanoid
         else
@@ -161,10 +188,11 @@ TabTroll:AddToggle({
 
 ---
 -- ABA 5: VISUAL
+-- ESP para ver jogadores através das paredes com cores customizáveis
 ---
 local TabVisual = Window:MakeTab({"Visual", "eye"})
 
-TabVisual:AddSection({"Configuração de ESP"})
+TabVisual:AddSection({"Configurações de ESP"})
 
 TabVisual:AddToggle({
     Name = "Ativar ESP Highlight",
@@ -173,15 +201,17 @@ TabVisual:AddToggle({
         espEnabled = v
         if not v then
             for _, p in pairs(game.Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("CatHighlight") then p.Character.CatHighlight:Destroy() end
+                if p.Character and p.Character:FindFirstChild("CatHighlight") then 
+                    p.Character.CatHighlight:Destroy() 
+                end
             end
         end
     end
 })
 
 TabVisual:AddDropdown({
-    Name = "Cor do ESP",
-    Options = {"Vermelho", "Verde", "Azul", "Amarelo", "Branco"},
+    Name = "Escolher Cor do ESP",
+    Options = {"Vermelho", "Verde", "Azul", "Amarelo", "Branco", "Rosa"},
     Default = "Vermelho",
     Callback = function(v)
         local colors = {
@@ -189,13 +219,14 @@ TabVisual:AddDropdown({
             ["Verde"] = Color3.fromRGB(0, 255, 0),
             ["Azul"] = Color3.fromRGB(0, 0, 255),
             ["Amarelo"] = Color3.fromRGB(255, 255, 0),
-            ["Branco"] = Color3.fromRGB(255, 255, 255)
+            ["Branco"] = Color3.fromRGB(255, 255, 255),
+            ["Rosa"] = Color3.fromRGB(255, 0, 255)
         }
         espColor = colors[v]
     end
 })
 
--- Loop ESP
+-- Loop Heartbeat para o ESP (Mais performático)
 RunService.Heartbeat:Connect(function()
     if espEnabled then
         for _, p in pairs(game.Players:GetPlayers()) do
@@ -203,6 +234,7 @@ RunService.Heartbeat:Connect(function()
                 local h = p.Character:FindFirstChild("CatHighlight") or Instance.new("Highlight", p.Character)
                 h.Name = "CatHighlight"
                 h.FillColor = espColor
+                h.OutlineColor = Color3.new(1,1,1)
                 h.Enabled = true
             end
         end
@@ -210,11 +242,11 @@ RunService.Heartbeat:Connect(function()
 end)
 
 ---
--- ABA 6: MUNDO
+-- ABA 6: MUNDO (BROOKHAVEN)
 ---
 local TabMundo = Window:MakeTab({"Mundo", "globe"})
 TabMundo:AddButton({
-    Name = "Virar Zumbi (Brookhaven)",
+    Name = "Virar Zumbi",
     Callback = function()
         game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true})
     end
@@ -225,13 +257,19 @@ TabMundo:AddButton({
 ---
 local TabConfig = Window:MakeTab({"Config", "settings"})
 TabConfig:AddButton({
-    Name = "Infinite Yield",
+    Name = "Infinite Yield (Admin)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))()
     end
 })
 
-redzlib:Notify({Title = "Cat Hub", Text = "Script completo carregado!", Duration = 5})
+-- Notificação final ao carregar
+redzlib:Notify({
+    Title = "Cat Hub v1",
+    Text = "O melhor script foi carregado com sucesso!",
+    Duration = 5
+})
+ 
 
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
