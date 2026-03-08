@@ -1,199 +1,238 @@
-local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/minhdepzai-v/LibraryRobloc/refs/heads/main/RedzLibrary.lua"))()
+-- // INICIALIZAÇÃO E IDENTIDADE //
+local success, content = pcall(function()
+    return game:HttpGet("https://nexviewsservice.shardweb.app/services/s4turn_hub/start")
+end)
+
+-- Sistema de Nome/Bio no Brookhaven
+local RE = game:GetService("ReplicatedStorage"):WaitForChild("RE")
+pcall(function()
+    RE["1RPNam1eTex1t"]:FireServer("RolePlayBio", "Cat Hub v1 - FULL")
+    RE["1RPNam1eTex1t"]:FireServer("RolePlayName", "ã¾ Cat Hub v1")
+end)
+
+-- Carregamento da Library
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/toparemos/Library/refs/heads/main/library.lua"))()
 
 local Window = redzlib:MakeWindow({
-  Title = "Cat hub v1 português",
-  SubTitle = "by scripts073 and davi lucas and scripts_H54",
-  SaveFolder = "CatHubBrookhaven.json"
+    Title = "Cat hub v1 português",
+    SubTitle = "by scripts073, davi lucas e scripts_H54",
+    SaveFolder = "CatHubBrookhaven.json"
 })
 
--- // TEMA PRETO E VERMELHO //
-redzlib:SetTheme({
-    Accent = Color3.fromRGB(255, 0, 0),
-    Background = Color3.fromRGB(5, 5, 5),
-    Section = Color3.fromRGB(15, 15, 15),
-    Text = Color3.fromRGB(255, 255, 255),
-    PlaceholderText = Color3.fromRGB(120, 120, 120)
-})
-
--- Botão de Minimizar (Bolinha) com Foto Nova
+-- Botão de Minimizar (ID: 14096965095)
 Window:AddMinimizeButton({
-    Button = { 
-        Image = "rbxassetid://10800748303", 
-        BackgroundTransparency = 0 
-    },
-    Corner = { CornerRadius = UDim.new(1, 0) },
+    Button = { Image = "rbxassetid://14096965095", BackgroundTransparency = 0 },
+    Corner = { CornerRadius = UDim.new(35, 1) },
 })
 
 ---
--- VARIÁVEIS GLOBAIS
+-- VARIÁVEIS DE CONTROLE
 ---
 local SelectedPlayer = ""
-local FlingEnabled = false
-local espColor = Color3.fromRGB(255, 0, 0)
+local AimbotEnabled = false
+local AimPart = "Head"
 local espEnabled = false
+local espColor = Color3.fromRGB(255, 0, 0)
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local LP = game.Players.LocalPlayer
 
 local function getPlayers()
     local list = {}
     for _, plr in pairs(game.Players:GetPlayers()) do
-        if plr ~= game.Players.LocalPlayer then
-            table.insert(list, plr.Name)
-        end
+        if plr ~= LP then table.insert(list, plr.Name) end
     end
     return list
 end
 
 ---
--- ABA INFORMAÇÕES
+-- ABA 1: INFORMAÇÕES (CONFORME A IMAGEM)
 ---
-local TabInfo = Window:MakeTab({"Informações", "info"})
+local Tab1 = Window:MakeTab({"Informações", "info"})
 
--- Discord com Foto Nova e Link Atualizado
-TabInfo:AddDiscordInvite({
-    Name = "Cat hub community",
-    Description = "Entre no nosso Discord para novidades!",
-    Logo = "rbxassetid://6633546598", 
-    Invite = "https://discord.gg/wsjtdbNPYf",
+Tab1:AddSection({"Creditos do Hub"})
+
+Tab1:AddDiscordInvite({
+    Name = "â½¦ Cat Hub Studios",
+    Description = "Discord oficial do cat hub entra para saber atualizações do hub: https://discord.gg/vUNHqeUtQq",
+    Logo = "rbxassetid://74041792558354",
+    Invite = "https://discord.gg/vUNHqeUtQq",
 })
 
-TabInfo:AddSection({"Status"})
-TabInfo:AddParagraph({"Informações do Script", "O script está: Online 🟢\nVersão: 1.0.2"})
-
-TabInfo:AddSection({"Equipe do Cat Hub"})
-TabInfo:AddParagraph({
-    "Membros da Staff", 
-    "Dono: Scripts073\nSub-Dono: Davi Lucas and scripts_H54\nAdministrador: ninguém\nModerador: ninguém\nStaff: ninguém\nTester: ninguém"
-})
+Tab1:AddSection({"Status"})
+Tab1:AddParagraph({"Informações", "O script está: Online 🟢\nVersão: 1.0.2\nCriado por: Scripts073, Davi Lucas e scripts_H54"})
 
 ---
--- ABA TROLL
+-- ABA 2: COMBATE
 ---
-local TabTroll = Window:MakeTab({"Troll", "skull"})
+local TabCombat = Window:MakeTab({"Combate", "crosshair"})
+TabCombat:AddSection({"Aimbot"})
 
-TabTroll:AddSection({"Seletor de Alvos"})
-
-local PlayerDropdown = TabTroll:AddDropdown({
+local TargetDropdown = TabCombat:AddDropdown({
     Name = "Selecionar Player",
-    Description = "Escolha um jogador primeiro",
     Options = getPlayers(),
     Default = "",
-    Callback = function(Value)
-        SelectedPlayer = Value
+    Callback = function(v) SelectedPlayer = v end
+})
+
+TabCombat:AddButton({
+    Name = "Atualizar Players",
+    Callback = function() TargetDropdown:SetOptions(getPlayers()) end
+})
+
+TabCombat:AddDropdown({
+    Name = "Focar Parte do Corpo",
+    Options = {"Cabeça", "Barriga", "Braço Direito", "Braço Esquerdo", "Pé Direito", "Pé Esquerdo"},
+    Default = "Cabeça",
+    Callback = function(v)
+        local parts = {["Cabeça"]="Head", ["Barriga"]="HumanoidRootPart", ["Braço Direito"]="RightUpperArm", ["Braço Esquerdo"]="LeftUpperArm", ["Pé Direito"]="RightFoot", ["Pé Esquerdo"]="LeftFoot"}
+        AimPart = parts[v] or "Head"
     end
 })
 
-TabTroll:AddButton({
-    Name = "Atualizar Lista de Players",
-    Callback = function()
-        PlayerDropdown:SetOptions(getPlayers())
-        redzlib:SetNotification({Title = "Cat Hub", Content = "Lista atualizada!", Duration = 2})
+TabCombat:AddToggle({
+    Name = "Ativar Aimbot",
+    Default = false,
+    Callback = function(v) AimbotEnabled = v end
+})
+
+-- Loop Aimbot
+RunService.RenderStepped:Connect(function()
+    if AimbotEnabled and SelectedPlayer ~= "" then
+        local target = game.Players:FindFirstChild(SelectedPlayer)
+        if target and target.Character and target.Character:FindFirstChild(AimPart) then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[AimPart].Position)
+        end
+    end
+end)
+
+---
+-- ABA 3: PLAYER (NOVA ABA)
+---
+local TabPlayer = Window:MakeTab({"Player", "user"})
+
+TabPlayer:AddSection({"Movimentação"})
+
+TabPlayer:AddSlider({
+    Name = "Velocidade (WalkSpeed)",
+    Min = 16, Max = 500, Default = 16,
+    Callback = function(v)
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.WalkSpeed = v
+        end
     end
 })
 
-TabTroll:AddSection({"Ações Troll"})
+TabPlayer:AddSlider({
+    Name = "Pulo (JumpPower)",
+    Min = 50, Max = 1000, Default = 50,
+    Callback = function(v)
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.UseJumpPower = true
+            LP.Character.Humanoid.JumpPower = v
+        end
+    end
+})
 
+TabPlayer:AddSlider({
+    Name = "Gravidade",
+    Min = 0, Max = 196.2, Default = 196.2,
+    Callback = function(v)
+        workspace.Gravity = v
+    end
+})
+
+---
+-- ABA 4: TROLL
+---
+local TabTroll = Window:MakeTab({"Troll", "skull"})
 TabTroll:AddToggle({
     Name = "View Player (Espiar)",
     Default = false,
     Callback = function(state)
-        if state then
-            local target = game.Players:FindFirstChild(SelectedPlayer)
-            if target and target.Character then
-                Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
-            end
+        local target = game.Players:FindFirstChild(SelectedPlayer)
+        if state and target and target.Character then
+            Camera.CameraSubject = target.Character.Humanoid
         else
-            Camera.CameraSubject = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        end
-    end
-})
-
-TabTroll:AddToggle({
-    Name = "Ativar Fling (Sofá Troll)",
-    Default = false,
-    Callback = function(Value)
-        FlingEnabled = Value
-        if FlingEnabled then
-            if SelectedPlayer == "" then return end
-            task.spawn(function()
-                while FlingEnabled do
-                    pcall(function()
-                        local targetPlayer = game.Players:FindFirstChild(SelectedPlayer)
-                        if targetPlayer and targetPlayer.Character then
-                            local root = game.Players.LocalPlayer.Character.HumanoidRootPart
-                            root.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
-                            root.Velocity = Vector3.new(99999, 99999, 99999)
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        else
-            pcall(function() game.Players.LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0) end)
+            Camera.CameraSubject = LP.Character.Humanoid
         end
     end
 })
 
 ---
--- ABA VISUAL
+-- ABA 5: VISUAL
 ---
 local TabVisual = Window:MakeTab({"Visual", "eye"})
 
-local function updateESP()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local char = player.Character
-            local highlight = char:FindFirstChild("CatESP") or Instance.new("Highlight", char)
-            highlight.Name = "CatESP"
-            highlight.FillColor = espColor
-            highlight.Enabled = espEnabled
-        end
-    end
-end
+TabVisual:AddSection({"Configuração de ESP"})
 
 TabVisual:AddToggle({
-    Name = "Ativar ESP",
+    Name = "Ativar ESP Highlight",
     Default = false,
-    Callback = function(Value)
-        espEnabled = Value
-        updateESP()
+    Callback = function(v)
+        espEnabled = v
+        if not v then
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("CatHighlight") then p.Character.CatHighlight:Destroy() end
+            end
+        end
     end
 })
 
 TabVisual:AddDropdown({
     Name = "Cor do ESP",
-    Options = {"Vermelho", "Azul", "Verde", "Branco"},
+    Options = {"Vermelho", "Verde", "Azul", "Amarelo", "Branco"},
     Default = "Vermelho",
-    Callback = function(Value)
-        local colors = {["Vermelho"] = Color3.fromRGB(255,0,0), ["Azul"] = Color3.fromRGB(0,0,255), ["Verde"] = Color3.fromRGB(0,255,0), ["Branco"] = Color3.fromRGB(255,255,255)}
-        espColor = colors[Value]
-        updateESP()
+    Callback = function(v)
+        local colors = {
+            ["Vermelho"] = Color3.fromRGB(255, 0, 0),
+            ["Verde"] = Color3.fromRGB(0, 255, 0),
+            ["Azul"] = Color3.fromRGB(0, 0, 255),
+            ["Amarelo"] = Color3.fromRGB(255, 255, 0),
+            ["Branco"] = Color3.fromRGB(255, 255, 255)
+        }
+        espColor = colors[v]
+    end
+})
+
+-- Loop ESP
+RunService.Heartbeat:Connect(function()
+    if espEnabled then
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local h = p.Character:FindFirstChild("CatHighlight") or Instance.new("Highlight", p.Character)
+                h.Name = "CatHighlight"
+                h.FillColor = espColor
+                h.Enabled = true
+            end
+        end
+    end
+end)
+
+---
+-- ABA 6: MUNDO
+---
+local TabMundo = Window:MakeTab({"Mundo", "globe"})
+TabMundo:AddButton({
+    Name = "Virar Zumbi (Brookhaven)",
+    Callback = function()
+        game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true})
     end
 })
 
 ---
--- ABA BROOKHAVEN
+-- ABA 7: CONFIG
 ---
-local TabBrook = Window:MakeTab({"Brookhaven", "car"})
-TabBrook:AddButton({"Virar Zumbi", function()
-    game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true})
-end})
-
----
--- ABA SCRIPTS & CONFIG
----
-local TabScripts = Window:MakeTab({"Scripts", "scroll"})
-TabScripts:AddButton({ Name = "Infinite Yield", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))() end })
-
 local TabConfig = Window:MakeTab({"Config", "settings"})
-TabConfig:AddSlider({
-    Name = "Velocidade",
-    Min = 16, Max = 200, Default = 16,
-    Callback = function(Value)
-        pcall(function() game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value end)
+TabConfig:AddButton({
+    Name = "Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))()
     end
 })
 
-Window:SelectTab(TabInfo)
+redzlib:Notify({Title = "Cat Hub", Text = "Script completo carregado!", Duration = 5})
+
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
