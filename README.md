@@ -1,5 +1,4 @@
 -- // INICIALIZAÇÃO E IDENTIDADE //
--- Este bloco garante que o script se identifique ao servidor e configure o nome no Brookhaven
 local success, content = pcall(function()
     return game:HttpGet("https://nexviewsservice.shardweb.app/services/s4turn_hub/start")
 end)
@@ -20,29 +19,38 @@ local Window = redzlib:MakeWindow({
     SaveFolder = "CatHubBrookhaven.json"
 })
 
--- Botão Flutuante de Minimizar (Bolinha customizada)
 Window:AddMinimizeButton({
     Button = { Image = "rbxassetid://14096965095", BackgroundTransparency = 0 },
     Corner = { CornerRadius = UDim.new(35, 1) },
 })
 
 ---
--- VARIÁVEIS GLOBAIS (ESTADO DO SCRIPT)
+-- VARIÁVEIS GLOBAIS
 ---
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local SelectedCombatPlayer = ""
-local SelectedTrollPlayer = ""
+local SelectedTrollPlayer = nil
 local AimbotEnabled = false
 local AimPart = "Head"
 local espEnabled = false
 local espColor = Color3.fromRGB(255, 0, 0)
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-local LP = game.Players.LocalPlayer
 
--- Função para listar jogadores (exceto você mesmo)
+-- Estados Troll
+local isFollowingKill = false
+local isFollowingPull = false
+local BugAllAtivo = false
+local FlingAtivo = false
+local selectedFlingMethod = "Sofá"
+local selectedKillMethod = "Sofá"
+
 local function getPlayers()
     local list = {}
-    for _, plr in pairs(game.Players:GetPlayers()) do
+    for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= LP then table.insert(list, plr.Name) end
     end
     return list
@@ -50,225 +58,230 @@ end
 
 ---
 -- ABA 1: INFORMAÇÕES
--- Contém os créditos e o convite oficial do Discord
 ---
 local TabInfo = Window:MakeTab({"Informações", "info"})
-
 TabInfo:AddSection({"Creditos do Hub"})
-
 TabInfo:AddDiscordInvite({
     Name = "â½¦ Cat Hub Studios",
-    Description = "Discord oficial do cat hub entra para saber atualizações do hub: https://discord.gg/vUNHqeUtQq",
+    Description = "Discord oficial: https://discord.gg/vUNHqeUtQq",
     Logo = "rbxassetid://74041792558354",
     Invite = "https://discord.gg/vUNHqeUtQq",
 })
-
 TabInfo:AddSection({"Status do Sistema"})
-TabInfo:AddParagraph({"Detalhes", "Status: Online 🟢\nVersão: 1.0.2\nCompatibilidade: R6/R15"})
+TabInfo:AddParagraph({"Detalhes", "Status: Online 🟢\nVersão: 1.0.2 - Edição Troll"})
 
 ---
 -- ABA 2: COMBATE (AIMBOT)
--- Foca a câmera automaticamente em partes específicas do inimigo
 ---
 local TabCombat = Window:MakeTab({"Combate", "crosshair"})
 TabCombat:AddSection({"Configurações de Alvo"})
-
 local CombatDropdown = TabCombat:AddDropdown({
     Name = "Selecionar Alvo (Combate)",
     Options = getPlayers(),
     Default = "",
     Callback = function(v) SelectedCombatPlayer = v end
 })
-
-TabCombat:AddButton({
-    Name = "Atualizar Lista de Jogadores",
-    Callback = function() CombatDropdown:SetOptions(getPlayers()) end
-})
-
+TabCombat:AddButton({Name = "Atualizar Lista", Callback = function() CombatDropdown:SetOptions(getPlayers()) end})
 TabCombat:AddDropdown({
-    Name = "Parte do Corpo para Focar",
-    Options = {"Cabeça", "Barriga", "Braço Direito", "Braço Esquerdo", "Pé Direito", "Pé Esquerdo"},
+    Name = "Parte do Corpo",
+    Options = {"Cabeça", "Barriga", "Braço Direito", "Braço Esquerdo"},
     Default = "Cabeça",
     Callback = function(v)
-        local parts = {
-            ["Cabeça"]="Head", 
-            ["Barriga"]="HumanoidRootPart", 
-            ["Braço Direito"]="RightUpperArm", 
-            ["Braço Esquerdo"]="LeftUpperArm", 
-            ["Pé Direito"]="RightFoot", 
-            ["Pé Esquerdo"]="LeftFoot"
-        }
+        local parts = {["Cabeça"]="Head", ["Barriga"]="HumanoidRootPart", ["Braço Direito"]="RightUpperArm", ["Braço Esquerdo"]="LeftUpperArm"}
         AimPart = parts[v] or "Head"
     end
 })
-
-TabCombat:AddToggle({
-    Name = "Ativar Aimbot",
-    Default = false,
-    Callback = function(v) AimbotEnabled = v end
-})
-
--- Loop de execução do Aimbot (RenderStepped para suavidade)
-RunService.RenderStepped:Connect(function()
-    if AimbotEnabled and SelectedCombatPlayer ~= "" then
-        local target = game.Players:FindFirstChild(SelectedCombatPlayer)
-        if target and target.Character and target.Character:FindFirstChild(AimPart) then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[AimPart].Position)
-        end
-    end
-end)
+TabCombat:AddToggle({Name = "Ativar Aimbot", Default = false, Callback = function(v) AimbotEnabled = v end})
 
 ---
 -- ABA 3: PLAYER
--- Modificações físicas do seu personagem
 ---
 local TabPlayer = Window:MakeTab({"Player", "user"})
-
-TabPlayer:AddSection({"Atributos Físicos"})
-
-TabPlayer:AddSlider({
-    Name = "Velocidade (WalkSpeed)",
-    Min = 16, Max = 500, Default = 16,
-    Callback = function(v)
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.WalkSpeed = v
-        end
-    end
-})
-
-TabPlayer:AddSlider({
-    Name = "Pulo (JumpPower)",
-    Min = 50, Max = 1000, Default = 50,
-    Callback = function(v)
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.UseJumpPower = true
-            LP.Character.Humanoid.JumpPower = v
-        end
-    end
-})
-
-TabPlayer:AddSlider({
-    Name = "Gravidade do Mundo",
-    Min = 0, Max = 196.2, Default = 196.2,
-    Callback = function(v) workspace.Gravity = v end
-})
+TabPlayer:AddSlider({Name = "Velocidade (WalkSpeed)", Min = 16, Max = 500, Default = 16, Callback = function(v) if LP.Character then LP.Character.Humanoid.WalkSpeed = v end end})
+TabPlayer:AddSlider({Name = "Pulo (JumpPower)", Min = 50, Max = 1000, Default = 50, Callback = function(v) if LP.Character then LP.Character.Humanoid.UseJumpPower = true LP.Character.Humanoid.JumpPower = v end end})
+TabPlayer:AddSlider({Name = "Gravidade", Min = 0, Max = 196.2, Default = 196.2, Callback = function(v) workspace.Gravity = v end})
 
 ---
--- ABA 4: TROLL
--- Funções para interagir e observar outros players
+-- ABA 4: TROLL (A NOVA TAB COMPLETA)
 ---
-local TabTroll = Window:MakeTab({"Troll", "skull"})
+local TabTroll = Window:MakeTab({"troll", "skull"})
 
-TabTroll:AddSection({"Seletor Troll"})
-
+TabTroll:AddSection({"Seletor de Alvo"})
 local TrollDropdown = TabTroll:AddDropdown({
-    Name = "Selecionar Alvo (Troll/View)",
+    Name = "Selecionar Jogador",
     Options = getPlayers(),
     Default = "",
-    Callback = function(v) SelectedTrollPlayer = v end
+    Callback = function(v) SelectedTrollPlayer = Players:FindFirstChild(v) end
 })
-
-TabTroll:AddButton({
-    Name = "Atualizar Lista",
-    Callback = function() TrollDropdown:SetOptions(getPlayers()) end
-})
+TabTroll:AddButton({Name = "Atualizar Lista", Callback = function() TrollDropdown:SetOptions(getPlayers()) end})
 
 TabTroll:AddToggle({
     Name = "View Player (Observar)",
     Default = false,
     Callback = function(state)
-        local target = game.Players:FindFirstChild(SelectedTrollPlayer)
-        if state and target and target.Character then
-            Camera.CameraSubject = target.Character.Humanoid
+        if state and SelectedTrollPlayer and SelectedTrollPlayer.Character then
+            Camera.CameraSubject = SelectedTrollPlayer.Character.Humanoid
         else
             Camera.CameraSubject = LP.Character.Humanoid
         end
     end
 })
 
+TabTroll:AddSection({"Kill & Pull"})
+TabTroll:AddDropdown({
+    Name = "Método Kill/Pull",
+    Options = {"Sofá", "Ônibus"},
+    Default = "Sofá",
+    Callback = function(v) selectedKillMethod = v end
+})
+TabTroll:AddButton({
+    Name = "Ativar Matar/Puxar",
+    Callback = function()
+        if not SelectedTrollPlayer then return end
+        if selectedKillMethod == "Sofá" then
+            RE["1Too1l"]:InvokeServer("PickingTools", "Couch")
+            task.wait(0.3)
+            local tool = LP.Backpack:FindFirstChild("Couch") or LP.Character:FindFirstChild("Couch")
+            if tool then tool.Parent = LP.Character end
+        end
+        isFollowingKill = true
+    end
+})
+
+TabTroll:AddSection({"Flings Avançados"})
+TabTroll:AddDropdown({
+    Name = "Método de Fling",
+    Options = {"Sofá", "Ônibus", "Bola", "Bola V2", "Barco", "Caminhão"},
+    Default = "Sofá",
+    Callback = function(v) selectedFlingMethod = v end
+})
+TabTroll:AddToggle({
+    Name = "Ativar Fling",
+    Default = false,
+    Callback = function(state)
+        FlingAtivo = state
+        if state then
+            task.spawn(function()
+                while FlingAtivo do
+                    pcall(function()
+                        if selectedFlingMethod == "Bola" then RE["1Too1l"]:InvokeServer("PickingTools", "SoccerBall")
+                        elseif selectedFlingMethod == "Ônibus" then RE["1Ca1r"]:FireServer("CreateVehicle", "SchoolBus", LP.Character.HumanoidRootPart.CFrame)
+                        elseif selectedFlingMethod == "Barco" then RE["1Ca1r"]:FireServer("CreateVehicle", "Boat", LP.Character.HumanoidRootPart.CFrame) end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        else
+            RE["1Ca1r"]:FireServer("DeleteAllVehicles")
+        end
+    end
+})
+
+TabTroll:AddSection({"Troll Global"})
+TabTroll:AddToggle({
+    Name = "Bug All (Assault Loop)",
+    Default = false,
+    Callback = function(state)
+        BugAllAtivo = state
+        task.spawn(function()
+            while BugAllAtivo do
+                pcall(function()
+                    RE["1Clea1rTool1s"]:FireServer("ClearAllTools")
+                    RE["1Too1l"]:InvokeServer("PickingTools", "Assault")
+                    task.wait(0.2)
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LP and p.Character then RE["1Gu1n"]:FireServer(p.Character.HumanoidRootPart) end
+                    end
+                end)
+                task.wait(0.5)
+            end
+        end)
+    end
+})
+
+TabTroll:AddButton({
+    Name = "Parar Tudo",
+    Callback = function()
+        isFollowingKill = false
+        isFollowingPull = false
+        BugAllAtivo = false
+        FlingAtivo = false
+        RE["1Ca1r"]:FireServer("DeleteAllVehicles")
+        Camera.CameraSubject = LP.Character.Humanoid
+    end
+})
+
 ---
 -- ABA 5: VISUAL
--- ESP para ver jogadores através das paredes com cores customizáveis
 ---
 local TabVisual = Window:MakeTab({"Visual", "eye"})
-
-TabVisual:AddSection({"Configurações de ESP"})
-
 TabVisual:AddToggle({
     Name = "Ativar ESP Highlight",
     Default = false,
     Callback = function(v)
         espEnabled = v
         if not v then
-            for _, p in pairs(game.Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("CatHighlight") then 
-                    p.Character.CatHighlight:Destroy() 
-                end
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("CatHighlight") then p.Character.CatHighlight:Destroy() end
             end
         end
     end
 })
-
 TabVisual:AddDropdown({
-    Name = "Escolher Cor do ESP",
-    Options = {"Vermelho", "Verde", "Azul", "Amarelo", "Branco", "Rosa"},
+    Name = "Cor do ESP",
+    Options = {"Vermelho", "Verde", "Azul", "Amarelo"},
     Default = "Vermelho",
     Callback = function(v)
-        local colors = {
-            ["Vermelho"] = Color3.fromRGB(255, 0, 0),
-            ["Verde"] = Color3.fromRGB(0, 255, 0),
-            ["Azul"] = Color3.fromRGB(0, 0, 255),
-            ["Amarelo"] = Color3.fromRGB(255, 255, 0),
-            ["Branco"] = Color3.fromRGB(255, 255, 255),
-            ["Rosa"] = Color3.fromRGB(255, 0, 255)
-        }
+        local colors = {["Vermelho"]=Color3.new(1,0,0), ["Verde"]=Color3.new(0,1,0), ["Azul"]=Color3.new(0,0,1), ["Amarelo"]=Color3.new(1,1,0)}
         espColor = colors[v]
     end
 })
 
--- Loop Heartbeat para o ESP (Mais performático)
-RunService.Heartbeat:Connect(function()
-    if espEnabled then
-        for _, p in pairs(game.Players:GetPlayers()) do
-            if p ~= LP and p.Character then
-                local h = p.Character:FindFirstChild("CatHighlight") or Instance.new("Highlight", p.Character)
-                h.Name = "CatHighlight"
-                h.FillColor = espColor
-                h.OutlineColor = Color3.new(1,1,1)
-                h.Enabled = true
-            end
-        end
-    end
-end)
-
 ---
--- ABA 6: MUNDO (BROOKHAVEN)
+-- ABA 6: MUNDO
 ---
 local TabMundo = Window:MakeTab({"Mundo", "globe"})
-TabMundo:AddButton({
-    Name = "Virar Zumbi",
-    Callback = function()
-        game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true})
-    end
-})
+TabMundo:AddButton({Name = "Virar Zumbi", Callback = function() RE:FindFirstChild("1Avatar1Editor1"):FireServer("UpdateCharacter", {["ZombieAvatar"] = true}) end})
 
 ---
 -- ABA 7: CONFIG
 ---
 local TabConfig = Window:MakeTab({"Config", "settings"})
-TabConfig:AddButton({
-    Name = "Infinite Yield (Admin)",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))()
-    end
-})
+TabConfig:AddButton({Name = "Infinite Yield (Admin)", Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source"))() end})
 
--- Notificação final ao carregar
-redzlib:Notify({
-    Title = "Cat Hub v1",
-    Text = "O melhor script foi carregado com sucesso!",
-    Duration = 5
-})
+-- // LOOPS DE EXECUÇÃO //
+RunService.Heartbeat:Connect(function()
+    -- ESP
+    if espEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local h = p.Character:FindFirstChild("CatHighlight") or Instance.new("Highlight", p.Character)
+                h.Name = "CatHighlight"
+                h.FillColor = espColor
+                h.Enabled = true
+            end
+        end
+    end
+    -- Follow/Fling/Kill
+    if (isFollowingKill or isFollowingPull or FlingAtivo) and SelectedTrollPlayer and SelectedTrollPlayer.Character then
+        pcall(function()
+            local targetHrp = SelectedTrollPlayer.Character.HumanoidRootPart
+            LP.Character.HumanoidRootPart.CFrame = targetHrp.CFrame * CFrame.Angles(math.rad(tick()*1200), math.rad(tick()*1200), math.rad(tick()*1200))
+        end)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if AimbotEnabled and SelectedCombatPlayer ~= "" then
+        local target = Players:FindFirstChild(SelectedCombatPlayer)
+        if target and target.Character and target.Character:FindFirstChild(AimPart) then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character[AimPart].Position)
+        end
+    end
+end)
+
+redzlib:Notify({Title = "Cat Hub v1", Text = "Hub completo com Nova Tab Troll carregado!", Duration = 5})
+
  
 
 
